@@ -42,7 +42,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------- Config ----------
-BASE_URL = st.sidebar.text_input("Backend API URL", value="http://localhost:8000")
+BASE_URL = st.secrets.get("API_URL", "http://localhost:8000")
 
 # ---------- Tabs ----------
 tab1, tab2, tab3 = st.tabs(["💬 Chat", "📁 Documents", "📊 Analytics"])
