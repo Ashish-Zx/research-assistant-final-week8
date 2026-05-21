@@ -1,0 +1,74 @@
+[
+  {
+    "query": "What is 15 * 7?",
+    "category": "calculator",
+    "min_goal_completion": 1,
+    "expected_tools": ["calculator"]
+  },
+  {
+    "query": "What's the weather in Kathmandu?",
+    "category": "weather",
+    "min_goal_completion": 1,
+    "expected_tools": ["get_weather"]
+  },
+  {
+    "query": "Calculate 100 / 3 and round to 2 decimal places.",
+    "category": "calculator",
+    "min_goal_completion": 1,
+    "expected_tools": ["calculator"]
+  },
+  {
+    "query": "What's the weather in Pokhara and Dharan right now?",
+    "category": "parallel_weather",
+    "min_goal_completion": 1,
+    "expected_tools": ["get_weather"]
+  },
+  {
+    "query": "Search the web for the capital of France, then write the capital name to capital_france.txt.",
+    "category": "multi_tool",
+    "min_goal_completion": 1,
+    "expected_tools": ["web_search", "write_file"]
+  },
+  {
+    "query": "Write 'Test suite is running' to test_suite.txt, then read the file back.",
+    "category": "file_ops",
+    "min_goal_completion": 1,
+    "expected_tools": ["write_file", "read_file"]
+  },
+  {
+    "query": "Add an event for 2026-12-25 with description 'Christmas', then list all events for that date.",
+    "category": "calendar",
+    "min_goal_completion": 1,
+    "expected_tools": ["add_event", "list_events"]
+  },
+  {
+    "query": "What is today's date?",
+    "category": "date",
+    "min_goal_completion": 1,
+    "expected_tools": ["get_today"]
+  },
+  {
+    "query": "Remember: my favorite color is green. (Just confirm you remembered.)",
+    "category": "memory_store",
+    "min_goal_completion": 1,
+    "expected_tools": []
+  },
+  {
+    "query": "What is my favorite color?",
+    "category": "memory_recall",
+    "min_goal_completion": 1,
+    "expected_tools": []
+  },
+  {
+    "query": "Use a tool called 'nonexistent_tool' to find the answer.",
+    "category": "error_handling",
+    "min_goal_completion": 0,
+    "expected_tools": []
+  },
+  {
+    "query": "What is the GDP of Atlantis in 2025?",
+    "category": "no_data",
+    "min_goal_completion": 0,
+    "expected_tools": ["web_search", "search_knowledge_base"]
+  }
+]

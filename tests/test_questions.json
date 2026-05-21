@@ -1,0 +1,42 @@
+[
+  {
+    "question": "How many gold medals did the United States win at the 2024 Summer Olympics?",
+    "gold_answer": "The United States won 40 gold medals at the 2024 Summer Olympics."
+  },
+  {
+    "question": "Which country finished second in the medal table?",
+    "gold_answer": "China finished second with 40 gold and 91 total medals."
+  },
+  {
+    "question": "How many total medals did the United States win?",
+    "gold_answer": "The United States won 126 total medals."
+  },
+  {
+    "question": "Which country won the most bronze medals?",
+    "gold_answer": "The United States won the most bronze medals (42)."
+  },
+  {
+    "question": "How many National Olympic Committees won at least one medal?",
+    "gold_answer": "92 NOCs won at least one medal."
+  },
+  {
+    "question": "Which athlete won the most gold medals at the 2024 Summer Olympics?",
+    "gold_answer": "French swimmer Léon Marchand won four gold medals."
+  },
+  {
+    "question": "What was the total number of gold medals awarded?",
+    "gold_answer": "A total of 329 gold medals were awarded."
+  },
+  {
+    "question": "Did Botswana win its first Olympic gold medal in 2024?",
+    "gold_answer": "Yes, Botswana won its first Olympic gold medal in 2024."
+  },
+  {
+    "question": "How many countries won at least one silver medal?",
+    "gold_answer": "83 countries won at least one silver medal."
+  },
+  {
+    "question": "Which nation won the most medals overall?",
+    "gold_answer": "The United States won the most medals overall, with 126."
+  }
+]

@@ -1,0 +1,218 @@
+{
+  "timestamp": "2026-05-21T19:15:48.173066",
+  "total": 12,
+  "passed": 10,
+  "failed": 2,
+  "details": [
+    {
+      "query": "What is 15 * 7?",
+      "category": "calculator",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "calculator"
+      ],
+      "status": "PASS",
+      "trace_id": "0dd9b042-c21c-4b48-b194-1265458bf3ca",
+      "tools_used": [
+        "calculator"
+      ],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 4,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "What's the weather in Kathmandu?",
+      "category": "weather",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "get_weather"
+      ],
+      "status": "PASS",
+      "trace_id": "814d6d90-6d5a-4861-afc6-d3b6b6e79d95",
+      "tools_used": [
+        "get_weather"
+      ],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 5,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "Calculate 100 / 3 and round to 2 decimal places.",
+      "category": "calculator",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "calculator"
+      ],
+      "status": "PASS",
+      "trace_id": "f8fa46a9-bef9-4c91-808a-814d54edf6c6",
+      "tools_used": [
+        "calculator"
+      ],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 4,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "What's the weather in Pokhara and Dharan right now?",
+      "category": "parallel_weather",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "get_weather"
+      ],
+      "status": "PASS",
+      "trace_id": "c8e9633d-96a4-4116-b3b4-8c849e4b73d0",
+      "tools_used": [
+        "get_weather",
+        "get_weather"
+      ],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 2,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "Search the web for the capital of France, then write the capital name to capital_france.txt.",
+      "category": "multi_tool",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "web_search",
+        "write_file"
+      ],
+      "status": "PASS",
+      "trace_id": "cd4c0991-0421-4b81-a239-c314445711c8",
+      "tools_used": [
+        "web_search",
+        "write_file"
+      ],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 2,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "Write 'Test suite is running' to test_suite.txt, then read the file back.",
+      "category": "file_ops",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "write_file",
+        "read_file"
+      ],
+      "status": "FAIL",
+      "trace_id": "19a8bdbb-26ae-4608-890d-65c7ebba6893",
+      "tools_used": [
+        "write_file",
+        "read_file"
+      ],
+      "scores": {
+        "goal_completion": 0,
+        "efficiency": 2,
+        "clarity": 1
+      }
+    },
+    {
+      "query": "Add an event for 2026-12-25 with description 'Christmas', then list all events for that date.",
+      "category": "calendar",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "add_event",
+        "list_events"
+      ],
+      "status": "PASS",
+      "trace_id": "b381772a-a149-4584-842a-346776b453e8",
+      "tools_used": [
+        "add_event",
+        "list_events"
+      ],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 2,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "What is today's date?",
+      "category": "date",
+      "min_goal_completion": 1,
+      "expected_tools": [
+        "get_today"
+      ],
+      "status": "PASS",
+      "trace_id": "82852ce6-c1a6-4818-bb68-f5c73378ae17",
+      "tools_used": [
+        "get_today"
+      ],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 5,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "Remember: my favorite color is green. (Just confirm you remembered.)",
+      "category": "memory_store",
+      "min_goal_completion": 1,
+      "expected_tools": [],
+      "status": "PASS",
+      "trace_id": "3f11a3ff-bd7f-4fd3-896d-c55487cf6bdc",
+      "tools_used": [],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 5,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "What is my favorite color?",
+      "category": "memory_recall",
+      "min_goal_completion": 1,
+      "expected_tools": [],
+      "status": "FAIL",
+      "trace_id": "539ffc15-0f7e-4d89-abe8-8680235696e3",
+      "tools_used": [],
+      "scores": {
+        "goal_completion": 0,
+        "efficiency": 1,
+        "clarity": 1
+      }
+    },
+    {
+      "query": "Use a tool called 'nonexistent_tool' to find the answer.",
+      "category": "error_handling",
+      "min_goal_completion": 0,
+      "expected_tools": [],
+      "status": "PASS",
+      "trace_id": "846f5758-be6b-4305-ba42-4b3f57e43522",
+      "tools_used": [],
+      "scores": {
+        "goal_completion": 0,
+        "efficiency": 5,
+        "clarity": 5
+      }
+    },
+    {
+      "query": "What is the GDP of Atlantis in 2025?",
+      "category": "no_data",
+      "min_goal_completion": 0,
+      "expected_tools": [
+        "web_search",
+        "search_knowledge_base"
+      ],
+      "status": "PASS",
+      "trace_id": "bf32137c-57de-4393-95b3-52a28c66a2a2",
+      "tools_used": [],
+      "scores": {
+        "goal_completion": 1,
+        "efficiency": 5,
+        "clarity": 5
+      }
+    }
+  ]
+}

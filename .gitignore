@@ -1,0 +1,9 @@
+.env
+chroma_db/
+logs/
+.venv/
+__pycache__/
+*.sqlite3
+.DS_Store
+*.pyc
+models/
