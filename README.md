@@ -1,201 +1,299 @@
 # 📚 AI Research Assistant
 
-A fully autonomous AI agent that reasons step-by-step, uses tools, and explains every decision — with a live evaluation dashboard and automated test suite.
+A full-stack, agentic AI research assistant that combines a **ReAct-style tool-calling agent**, a **Retrieval-Augmented Generation (RAG) pipeline**, and a **real-time Streamlit UI** — all powered by Groq's ultra-fast LLM inference.
 
-Built with **Groq**, **ChromaDB**, **Streamlit**, and **FastAPI**.
-
----
-
-## What it does
-
-You ask a question. The agent thinks, picks the right tools, executes them in parallel, and streams its reasoning live to the UI. Every interaction is traced, scored by an LLM judge, and surfaced in a monitoring dashboard.
-
-```
-User query → Agent reasons → Calls tools → Streams answer → Saves trace → Evaluates itself
-```
+🚀 **Live Demo:** [research-assistant-final.streamlit.app](https://research-assistant-final.streamlit.app)
 
 ---
 
-## Features
+## ✨ Features
 
-**Agent**
-- Step-by-step reasoning with visible thought process
-- Parallel tool execution with duplicate-call detection
+### 🤖 Agentic Reasoning
+- Multi-step **ReAct agent loop** — the model reasons, picks tools, observes results, and iterates until it reaches a final answer
+- Parallel tool execution via `ThreadPoolExecutor` for faster multi-tool queries
+- Duplicate tool-call detection to avoid redundant API calls
 - Automatic context trimming to stay within token limits
-- Persistent conversation memory via ChromaDB
+- Streaming responses via **Server-Sent Events (SSE)** for real-time token-by-token output
 
-**Tools**
+### 🛠️ Tool Suite (14 tools)
+
 | Tool | Description |
 |---|---|
-| `calculator` | Evaluates math expressions safely |
-| `get_weather` | Live weather for any city |
-| `web_search` | DuckDuckGo search, top 3 results |
-| `search_knowledge_base` | Hybrid vector + BM25 search over uploaded docs |
-| `summarize_document` | Summarizes the currently uploaded document |
-| `read_file` / `write_file` / `list_files` | Sandboxed file workspace |
-| `add_event` / `list_events` | Simple calendar management |
+| `calculator` | Evaluates mathematical expressions safely via `asteval` |
+| `get_weather` | Fetches live weather for any city via wttr.in |
+| `web_search` | DuckDuckGo web search — top 3 results |
+| `get_news` | Recent news headlines on any topic via DuckDuckGo News |
+| `search_wikipedia` | Wikipedia page summaries |
+| `convert_currency` | Live exchange rates via exchangerate-api.com |
+| `search_knowledge_base` | Semantic + BM25 hybrid search over uploaded documents |
+| `summarize_document` | Auto-summarizes the most recently uploaded document |
+| `read_file` | Reads files from a sandboxed workspace directory |
+| `write_file` | Writes files to the sandboxed workspace |
+| `list_files` | Lists all files in the workspace |
+| `add_event` | Adds a dated event to a local JSON calendar |
+| `list_events` | Lists calendar events, optionally filtered by date |
 | `get_today` | Returns today's date |
 
-**RAG Pipeline**
-- PDF and plain-text ingestion via PyMuPDF
-- Chunking with configurable size and overlap
-- Hybrid search: dense (sentence-transformers) + sparse (BM25) with RRF fusion
-- LLM-based self-query filter extraction (e.g. year metadata)
-- Groq-powered reranking
+### 📄 RAG Pipeline
+- **Document ingestion:** PDF and plain-text/Markdown files via PyMuPDF
+- **Chunking:** Overlapping word-level chunks (200 words, 50-word overlap)
+- **Embeddings:** Local `all-MiniLM-L6-v2` (384-dim) via `sentence-transformers`, or Ollama `nomic-embed-text` (768-dim)
+- **Vector store:** ChromaDB with persistent storage
+- **Hybrid search:** Vector similarity + BM25 (Okapi) fused via **Reciprocal Rank Fusion (RRF)**
+- **Self-query filtering:** LLM extracts metadata filters (e.g., year) from natural language queries
+- **LLM re-ranking:** Top-20 candidates re-ranked to top-5 by the LLM before answer generation
 
-**Evaluation & Monitoring**
-- Every trace saved to SQLite (`traces.db`)
-- Async LLM-as-judge scoring: goal completion, efficiency, clarity
-- Human thumbs up/down feedback in the UI
-- Streamlit dashboard with KPIs, charts, and trace inspector
+### 🧠 Conversation Memory
+- Every interaction is summarized by the LLM and stored as a vector embedding in ChromaDB
+- Relevant past interactions are retrieved and injected into the agent's context on each new query
 
----
-
-## Project structure
-
-```
-├── agent.py            # Core agent loop (streaming, tool dispatch, tracing)
-├── app.py              # Streamlit chat UI
-├── dashboard.py        # Evaluation & monitoring dashboard
-├── main.py             # FastAPI backend (upload, agent, rate endpoints)
-├── rag.py              # RAG pipeline (ingest, hybrid search, rerank, generate)
-├── tools.py            # Tool definitions and registry
-├── file_tools.py       # Sandboxed file read/write/list
-├── event_tools.py      # Calendar add/list
-├── memory.py           # Long-term conversation memory (ChromaDB)
-├── tracing.py          # SQLite trace persistence and schema migrations
-├── eval_agent.py       # LLM-as-judge evaluation
-├── llm_client.py       # Groq API client
-├── embedding_client.py # Embedding model client
-├── tool_registry.py    # Tool registration and schema generation
-├── config.py           # Environment config
-├── run_tests.py        # Automated test runner
-├── test_suite.json     # 12 test queries covering all tools
-└── workspace/          # Sandboxed file storage
-```
+### 📊 Evaluation & Observability
+- Every agent run is traced and persisted to **SQLite** (`traces.db`)
+- Async **LLM-as-judge** evaluation scores each trace on:
+  - `goal_completion` (0/1)
+  - `efficiency` (1–5)
+  - `clarity` (1–5)
+- Human feedback (👍/👎) collected in-UI and stored per trace
+- Full **Analytics Dashboard** with KPIs, tool usage charts, daily goal completion trends, and a trace inspector
 
 ---
 
-## Setup
+## 🏗️ Architecture
 
-**1. Clone and create a virtual environment**
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Streamlit UI (ui/)                    │
+│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐  │
+│  │   Chat   │  │  Documents   │  │  Analytics (dash) │  │
+│  └────┬─────┘  └──────┬───────┘  └───────────────────┘  │
+└───────┼───────────────┼─────────────────────────────────┘
+        │ SSE stream    │ file upload
+┌───────▼───────────────▼─────────────────────────────────┐
+│                  FastAPI Backend (api/)                  │
+│   /agent (SSE)   /upload   /ask   /documents   /rate    │
+└───────┬─────────────────────────────────────────────────┘
+        │
+┌───────▼──────────────────────────────────────────────────┐
+│                  Agent Loop (agent/loop.py)               │
+│  System Prompt → LLM (Groq) → Tool Calls → Observations  │
+│  ↕ parallel ThreadPoolExecutor   ↕ SSE yield             │
+└───────┬──────────────────────────────────────────────────┘
+        │
+   ┌────┴──────────────────────────────────────────┐
+   │              Tool Registry (14 tools)          │
+   │  builtins · web · wikipedia · news · currency  │
+   │  files · events · RAG (search + summarize)     │
+   └────┬──────────────────────────────────────────┘
+        │
+┌───────▼──────────────────────────────────────────────────┐
+│                    RAG Pipeline (rag/)                    │
+│  chunker → embedder → ChromaDB + BM25 → RRF → rerank    │
+└──────────────────────────────────────────────────────────┘
+        │
+┌───────▼──────────────────────────────────────────────────┐
+│              Eval & Memory (eval/ · agent/memory.py)      │
+│  SQLite traces · LLM judge · human ratings · ChromaDB    │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.11+
+- A [Groq API key](https://console.groq.com/)
+
+### 1. Clone & install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/your-username/research-assistant-final.git
 cd research-assistant-final
 python -m venv .venv
-source .venv/bin/activate
-```
-
-**2. Install dependencies**
-
-```bash
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 ```
 
-**3. Configure environment**
+### 2. Configure environment
 
-Create a `.env` file:
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
-MODEL_NAME=openai/gpt-oss-120b
+MODEL_NAME=meta-llama/llama-4-scout-17b-16e-instruct
 MAX_AGENT_STEPS=5
 LOG_LEVEL=INFO
-CHROMA_DB_PATH=./chroma_db
+CHROMA_DB_PATH=./data/chroma_db
+TRACE_DB_PATH=./data/traces.db
+API_URL=http://localhost:8000
+EMBEDDING_PROVIDER=transformers   # or "ollama"
 ```
 
-Get a free Groq API key at [console.groq.com](https://console.groq.com).
-
----
-
-## Running
-
-**Start the backend**
+### 3. Start the backend
 
 ```bash
-python main.py
+python run_api.py
+# FastAPI running at http://localhost:8000
+# Swagger docs at http://localhost:8000/docs
 ```
 
-Runs on `http://localhost:8000`.
-
-**Start the chat UI** (in a new terminal)
+### 4. Start the UI
 
 ```bash
-streamlit run app.py
+# Full-featured app (chat + documents + analytics)
+streamlit run ui/app.py
+
+# Or the standalone chat UI
+python run_chat.py
+
+# Or the standalone analytics dashboard
+python run_dashboard.py
 ```
 
-Opens at `http://localhost:8501`.
+---
 
-**Start the dashboard** (in a new terminal)
+## 🐳 Docker
 
 ```bash
-streamlit run dashboard.py
+docker build -t research-assistant .
+docker run -p 7860:7860 -e GROQ_API_KEY=your_key research-assistant
 ```
 
-Opens at `http://localhost:8502`.
-
----
-
-## Evaluation dashboard
-
-The dashboard auto-refreshes every 10 seconds and shows:
-
-- **KPIs** — queries today, avg goal completion, avg clarity, human rating
-- **Tool usage chart** — which tools are called most
-- **Goal completion over time** — daily trend line
-- **Recent traces table** — last 20 queries with all scores
-- **Trace inspector** — click any trace to see every thought, tool call, and result
-
----
-
-## Automated test suite
-
-`test_suite.json` contains 12 queries covering every tool and common edge cases.
+The image pre-downloads `all-MiniLM-L6-v2` at build time so the first request is instant. Persistent data (ChromaDB, traces, model cache) is stored under `/data` — mount a volume to preserve it across restarts:
 
 ```bash
-python run_tests.py
+docker run -p 7860:7860 \
+  -e GROQ_API_KEY=your_key \
+  -v $(pwd)/data:/data \
+  research-assistant
 ```
-
-Results are written to `test_report.json`. Compare against a saved baseline to catch regressions.
 
 ---
 
-## How the agent works
+## 📁 Project Structure
 
 ```
-1. User sends a query
-2. Agent appends reasoning instruction on step 1
-3. LLM responds with either:
-   a. Tool calls → executed in parallel → results fed back
-   b. "FINAL ANSWER:" → reasoning shown in expander, answer streamed to UI
-4. Trace saved to SQLite
-5. LLM judge scores the trace asynchronously (non-blocking)
-6. User can rate the response with 👍 / 👎
+research-assistant-final/
+├── agent/
+│   ├── loop.py            # ReAct agent loop (SSE streaming, parallel tools)
+│   ├── memory.py          # ChromaDB-backed conversation memory
+│   └── tools/
+│       ├── registry.py    # Tool class + ToolRegistry (auto JSON Schema)
+│       ├── builtins.py    # calculator, get_weather
+│       ├── web.py         # web_search (DuckDuckGo)
+│       ├── news.py        # get_news (DuckDuckGo News)
+│       ├── wikipedia.py   # search_wikipedia
+│       ├── currency.py    # convert_currency
+│       ├── files.py       # read_file, write_file, list_files
+│       └── events.py      # add_event, list_events
+├── api/
+│   ├── main.py            # FastAPI app — /agent, /upload, /ask, /rate, /documents
+│   └── models.py          # Pydantic request models
+├── rag/
+│   ├── chunker.py         # PDF/text extraction + overlapping chunking
+│   ├── embedder.py        # sentence-transformers or Ollama embeddings
+│   ├── database.py        # ChromaDB ingestion + BM25 index builder
+│   └── retriever.py       # Hybrid search (RRF), LLM rerank, answer gen, summarize
+├── eval/
+│   ├── tracer.py          # SQLite trace persistence
+│   ├── judge.py           # LLM-as-judge evaluation (goal/efficiency/clarity)
+│   └── test_runner.py     # Automated test suite runner
+├── ui/
+│   ├── app.py             # Full Streamlit app (chat + docs + analytics tabs)
+│   ├── chat.py            # Standalone chat UI
+│   └── dashboard.py       # Standalone analytics dashboard
+├── config.py              # Centralised config from .env
+├── llm_client.py          # Groq OpenAI-compatible client
+├── Dockerfile             # Production Docker image
+├── requirements.txt
+└── .env.example
 ```
-
-The agent detects repeated tool calls and skips them to avoid loops. Context is trimmed automatically when the message history grows too large.
 
 ---
 
-## Tech stack
+## ⚙️ Configuration Reference
 
-| Layer | Technology |
-|---|---|
-| LLM | Groq (configurable model) |
-| Embeddings | sentence-transformers |
-| Vector store | ChromaDB (persistent) |
-| Sparse search | BM25 (rank_bm25) |
-| Backend | FastAPI + Uvicorn |
-| Frontend | Streamlit |
-| Tracing | SQLite |
-| PDF parsing | PyMuPDF |
-| Logging | Loguru |
+| Variable | Default | Description |
+|---|---|---|
+| `GROQ_API_KEY` | — | **Required.** Your Groq API key |
+| `MODEL_NAME` | `meta-llama/llama-4-scout-17b-16e-instruct` | Any Groq-hosted model |
+| `MAX_AGENT_STEPS` | `5` | Max reasoning iterations per query |
+| `LOG_LEVEL` | `INFO` | Loguru log level |
+| `CHROMA_DB_PATH` | `./data/chroma_db` | ChromaDB persistence directory |
+| `TRACE_DB_PATH` | `./data/traces.db` | SQLite traces database path |
+| `API_URL` | `http://localhost:8000` | Backend URL used by the Streamlit UI |
+| `EMBEDDING_PROVIDER` | `transformers` | `transformers` (local) or `ollama` |
+
+> **Note:** Switching `EMBEDDING_PROVIDER` requires deleting `chroma_db/` to avoid vector dimension mismatches.
 
 ---
 
-## Notes
+## 🔌 API Reference
 
-- `traces.db` and `chroma_db/` are local data — add them to `.gitignore` or exclude before pushing
-- `.env` is never committed
-- The `workspace/` directory is sandboxed; file tools cannot escape it
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/agent` | Run the agent (SSE stream) |
+| `POST` | `/upload` | Upload and index a PDF/text document |
+| `POST` | `/ask` | Direct RAG query (no agent loop) |
+| `POST` | `/rate` | Submit human feedback for a trace |
+| `GET` | `/documents` | List indexed document sources |
+| `GET` | `/health` | Health check |
+
+**SSE event types** emitted by `/agent`:
+
+| Type | Payload | Description |
+|---|---|---|
+| `trace_id` | `{ id }` | Unique ID for this run |
+| `thought` | `{ content }` | Agent's internal reasoning |
+| `tool_call` | `{ tools: [{tool, args}] }` | Tools about to be called |
+| `tool_result` | `{ tool, result }` | Result from a tool |
+| `token` | `{ token }` | Streamed answer token |
+| `done` | — | Stream complete |
+
+---
+
+## 🧪 Running the Test Suite
+
+```bash
+# Make sure the API is running first
+python run_api.py &
+
+# Run the automated eval suite
+python eval/test_runner.py
+# Results saved to test_report.json
+```
+
+---
+
+## 🛠️ Extending the Agent
+
+Adding a new tool takes three steps:
+
+1. **Write the function** in `agent/tools/your_tool.py`
+2. **Register it** in `api/main.py`:
+   ```python
+   tool_registry.register(Tool("my_tool", "Description of what it does.", my_function))
+   ```
+3. **Mention it** in the `SYSTEM_PROMPT` in `agent/loop.py` so the agent knows it exists
+
+The `Tool` class in `registry.py` automatically generates the OpenAI-compatible JSON Schema from the function's type hints — no manual schema writing needed.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repo and create a feature branch
+2. Make your changes and add tests to `tests/test_suite.json`
+3. Run `python eval/test_runner.py` and confirm all tests pass
+4. Open a pull request
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
