@@ -7,6 +7,7 @@ import concurrent.futures
 
 from loguru import logger
 
+from agent.guard import should_alert, predict_failure_probability
 from llm_client import client, get_groq_model
 from config import MAX_AGENT_STEPS
 from eval.tracer import save_trace
@@ -61,9 +62,35 @@ def run_agent(
         max_steps = MAX_AGENT_STEPS
 
     logger.info(f"Agent started: {query} (max_steps={max_steps})")
+
     trace_id = str(uuid.uuid4())
-    yield f"data: {json.dumps({'type': 'trace_id', 'id': trace_id})}\n\n"
     trace_steps = []
+
+    failure_prob = float(predict_failure_probability(query))
+    logger.info(f"Guard: failure probability = {failure_prob:.2f}")
+
+    guard_triggered = bool(should_alert(query, threshold=0.7))
+    trace_steps.append(
+        {
+            "type": "guard_result",
+            "failure_prob": failure_prob,
+            "triggered": guard_triggered,
+        }
+    )
+
+    if guard_triggered:
+        logger.warning(f"Guard triggered for query: {query[:100]}")
+        warning_msg = (
+            "I'm not confident I can answer that accurately. "
+            "Could you rephrase or provide more details?"
+        )
+        yield f"data: {json.dumps({'type': 'trace_id', 'id': trace_id})}\n\n"
+        yield f"data: {json.dumps({'type': 'thought', 'content': 'Guard: high risk of failure, asking for clarification.'})}\n\n"
+        yield f"data: {json.dumps({'type': 'token', 'token': warning_msg + ' '})}\n\n"
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        return
+
+    yield f"data: {json.dumps({'type': 'trace_id', 'id': trace_id})}\n\n"
     start_time = time.time()
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},

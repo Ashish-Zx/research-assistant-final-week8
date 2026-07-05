@@ -29,7 +29,7 @@ from rag.retriever import (
 )
 
 app = FastAPI(title="Research Assistant")
-logger.add("logs/app.log", rotation="1 day", level=LOG_LEVEL)
+logger.add("logs/app_{time:YYYY-MM-DD}.log", rotation="00:00", level=LOG_LEVEL)
 
 document_uploaded: bool = False
 latest_doc_id: str | None = None

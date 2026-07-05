@@ -18,7 +18,6 @@ from config import TRACE_DB_PATH
 add_eval_columns()
 
 
-@st.cache_data(ttl=10)
 def load_data() -> pd.DataFrame:
     conn = sqlite3.connect(TRACE_DB_PATH)
     query = """
@@ -102,7 +101,7 @@ st.subheader("📋 Recent Traces")
 recent = df.head(20)[
     ["timestamp", "user_query", "goal_completion", "efficiency", "clarity", "human_rating"]
 ]
-st.dataframe(recent, use_container_width=True)
+st.dataframe(recent, width="stretch")
 
 # ------- Trace Inspector -------
 st.subheader("🔍 Inspect a Trace")

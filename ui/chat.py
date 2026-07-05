@@ -47,6 +47,39 @@ st.header("Ask the Assistant")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "rated_traces" not in st.session_state:
+    st.session_state.rated_traces = {}
+
+
+def render_feedback_controls(trace_id: str):
+    if st.session_state.rated_traces.get(trace_id) is not None:
+        st.caption("Thanks for your feedback!")
+        return
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("👍 Helpful", key=f"up_{trace_id}"):
+            resp = requests.post(
+                f"{BASE_URL}/rate", json={"trace_id": trace_id, "rating": 1}, timeout=5
+            )
+            if resp.ok:
+                st.session_state.rated_traces[trace_id] = 1
+                st.cache_data.clear()
+                st.rerun()
+            else:
+                st.error(f"Rating failed: {resp.text}")
+    with col2:
+        if st.button("👎 Not helpful", key=f"down_{trace_id}"):
+            resp = requests.post(
+                f"{BASE_URL}/rate", json={"trace_id": trace_id, "rating": 0}, timeout=5
+            )
+            if resp.ok:
+                st.session_state.rated_traces[trace_id] = 0
+                st.cache_data.clear()
+                st.rerun()
+            else:
+                st.error(f"Rating failed: {resp.text}")
+
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -57,6 +90,8 @@ for msg in st.session_state.messages:
                 ):
                     st.caption(f"**Args:** `{json.dumps(call['args'])}`")
                     st.caption(f"**Result:** {call['result']}")
+        if msg.get("trace_id"):
+            render_feedback_controls(msg["trace_id"])
 
 # ---------- Input ----------
 if prompt := st.chat_input("Type your question here..."):
@@ -138,20 +173,9 @@ if prompt := st.chat_input("Type your question here..."):
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
-        if "current_trace_id" in st.session_state:
-            trace_id = st.session_state.pop("current_trace_id")
-            feedback = st.feedback("thumbs", key=f"fb_{trace_id}")
-            if feedback is not None:
-                rating = 1 if feedback == 1 else 0
-                try:
-                    requests.post(
-                        f"{BASE_URL}/rate",
-                        json={"trace_id": trace_id, "rating": rating},
-                        timeout=5,
-                    )
-                    st.toast("Thanks for your feedback!")
-                except Exception:
-                    pass
+        trace_id = st.session_state.pop("current_trace_id", None)
+        if trace_id and full_answer:
+            render_feedback_controls(trace_id)
 
         if full_answer:
             st.session_state.messages.append(
@@ -159,5 +183,6 @@ if prompt := st.chat_input("Type your question here..."):
                     "role": "assistant",
                     "content": full_answer,
                     "tool_calls": tool_calls_log,
+                    "trace_id": trace_id,
                 }
             )

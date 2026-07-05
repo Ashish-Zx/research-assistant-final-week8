@@ -1,4 +1,5 @@
 # ui/app.py
+import os
 import streamlit as st
 import requests
 import json
@@ -42,7 +43,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------- Config ----------
-BASE_URL = st.secrets.get("API_URL", "http://localhost:8000")
+BASE_URL = os.getenv("API_URL", "http://localhost:8000")
+try:
+    BASE_URL = st.secrets["API_URL"]
+except Exception:
+    pass
+TRACE_DB_PATH = os.getenv("TRACE_DB_PATH", "./data/traces.db")
 
 # ---------- Tabs ----------
 tab1, tab2, tab3 = st.tabs(["💬 Chat", "📁 Documents", "📊 Analytics"])
@@ -50,6 +56,38 @@ tab1, tab2, tab3 = st.tabs(["💬 Chat", "📁 Documents", "📊 Analytics"])
 # ======================= TAB 1: CHAT =======================
 with tab1:
     st.header("Chat with your Agent")
+
+    if "rated_traces" not in st.session_state:
+        st.session_state.rated_traces = {}
+
+    def render_feedback_controls(trace_id: str):
+        if st.session_state.rated_traces.get(trace_id) is not None:
+            st.caption("Thanks for your feedback!")
+            return
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("👍 Helpful", key=f"up_{trace_id}"):
+                resp = requests.post(
+                    f"{BASE_URL}/rate", json={"trace_id": trace_id, "rating": 1}
+                )
+                if resp.ok:
+                    st.session_state.rated_traces[trace_id] = 1
+                    st.cache_data.clear()
+                    st.rerun()
+                else:
+                    st.error(f"Rating failed: {resp.text}")
+        with col2:
+            if st.button("👎 Not helpful", key=f"down_{trace_id}"):
+                resp = requests.post(
+                    f"{BASE_URL}/rate", json={"trace_id": trace_id, "rating": 0}
+                )
+                if resp.ok:
+                    st.session_state.rated_traces[trace_id] = 0
+                    st.cache_data.clear()
+                    st.rerun()
+                else:
+                    st.error(f"Rating failed: {resp.text}")
 
     # Initialize chat history
     if "messages" not in st.session_state:
@@ -63,6 +101,8 @@ with tab1:
                 for call in msg["tool_calls"]:
                     with st.expander(f"🔧 {call['tool']} (args: {json.dumps(call['args'])})", expanded=False):
                         st.caption(f"Result: {call['result']}")
+            if msg.get("trace_id"):
+                render_feedback_controls(msg["trace_id"])
 
     # Input box
     if prompt := st.chat_input("Ask anything..."):
@@ -182,17 +222,8 @@ with tab1:
                     "trace_id": trace_id
                 })
 
-            # Feedback row
             if trace_id and full_answer:
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("👍 Helpful", key=f"up_{trace_id}"):
-                        requests.post(f"{BASE_URL}/rate", json={"trace_id": trace_id, "rating": 1})
-                        st.toast("Thanks for your feedback!")
-                with col2:
-                    if st.button("👎 Not helpful", key=f"down_{trace_id}"):
-                        requests.post(f"{BASE_URL}/rate", json={"trace_id": trace_id, "rating": 0})
-                        st.toast("Thanks for your feedback!")
+                render_feedback_controls(trace_id)
 
 # ======================= TAB 2: DOCUMENTS =======================
 with tab2:
@@ -222,7 +253,7 @@ with tab2:
                 docs = resp.json()
                 if docs:
                     df = pd.DataFrame(docs)
-                    st.dataframe(df, use_container_width=True)
+                    st.dataframe(df, width="stretch")
                 else:
                     st.info("No documents indexed yet.")
             else:
@@ -235,15 +266,15 @@ with tab3:
     st.header("📊 Analytics Dashboard")
 
     # Load traces from SQLite
-    @st.cache_data(ttl=10)
     def load_traces():
         try:
-            conn = sqlite3.connect("traces.db")
+            conn = sqlite3.connect(TRACE_DB_PATH)
             df = pd.read_sql_query("SELECT * FROM traces", conn)
             conn.close()
             if df.empty:
                 return df
             df["timestamp"] = pd.to_datetime(df["timestamp"])
+            df = df.sort_values("timestamp", ascending=False).reset_index(drop=True)
             return df
         except Exception:
             return pd.DataFrame()
@@ -301,7 +332,7 @@ with tab3:
         # Recent traces
         st.subheader("📋 Recent Traces")
         recent = df.head(20)[["timestamp", "user_query", "goal_completion", "efficiency", "clarity", "human_rating"]]
-        st.dataframe(recent, use_container_width=True)
+        st.dataframe(recent, width="stretch")
 
         # Trace inspector
         st.subheader("🔍 Inspect a Trace")
